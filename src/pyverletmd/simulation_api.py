@@ -20,7 +20,7 @@ class Atom:
         self.pos_prev: np.ndarray = np.zeros(2)
 
     def get_KE(self):
-        return 0.5 * self.mass * (self.vx**2 + self.vy**2)
+        return 0.5 * self.mass * (self.vel[0] ** 2 + self.vel[1] ** 2)
 
     def reset_force(self):
         self.force = np.zeros(2)
@@ -35,7 +35,7 @@ class Atom:
         pos_temp = np.array(self.pos)  # later this will be the prev position
         self.pos = 2 * self.pos - self.pos_prev + (dt**2 * self.acc)
         self.pos = self.pos % size  # Periodic Boundary Condition
-        self.pos_prev = pos_temp
+        self.pos_prev = np.array(pos_temp)
 
     def update_vel(self, dt):
         self.vel += self.acc * dt
