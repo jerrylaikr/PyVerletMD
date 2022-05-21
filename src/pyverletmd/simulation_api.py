@@ -137,6 +137,7 @@ class Many_body_system:
         self.n_atoms: int = 0
         self.atoms_list: list[Atom] = []
         self.dt: float = dt
+        self.time_elapsed: float = 0.0
 
     def add_atom(self, atom_pos, atom_vel, atom_mass):
         if not (0 <= atom_pos[0] <= self.size[0] and 0 <= atom_pos[1] <= self.size[1]):
@@ -183,6 +184,7 @@ class Many_body_system:
             atom.update_pos(self.dt, self.size)
 
         self.update_all_except_pos()
+        self.time_elapsed += self.dt
 
     def eval_prev_pos(self):
         # evaluate r(-dt)
