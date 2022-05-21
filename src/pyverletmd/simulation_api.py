@@ -19,6 +19,9 @@ class Atom:
         # previous position
         self.pos_prev: np.ndarray = np.zeros(2)
 
+        # trajectory
+        self.traj = np.array([pos])
+
         # flag to check if properties have been updated
         self._updated = {
             "force": False,
@@ -64,6 +67,8 @@ class Atom:
         self.pos = 2 * self.pos - self.pos_prev + (dt**2 * self.acc)
         self.pos = self.pos % size  # Periodic Boundary Condition
         self.pos_prev = np.array(pos_temp)
+        # append new position to trajectory
+        self.traj = np.append(self.traj, [self.pos], axis=0)
 
         # reset "updated" flags
         self._updated["force"] = False
@@ -244,7 +249,7 @@ def main():
     print(f"initial total energy = {inital_total_energy}")
 
     # start loop
-    for idx in range(n_steps):
+    for idx in range(n_steps + 1):
         # output info of current state
         print(
             "frame = {}, time = {:.3f}ps / {:.3f}ps".format(idx, idx * dt, n_steps * dt)

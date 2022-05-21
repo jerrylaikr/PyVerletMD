@@ -41,8 +41,8 @@ def main():
     force_vector = []
     annot = []
     for _ in range(n_atoms):
-        traj.extend(ax.plot([], [], "c."))
-        mark.extend(ax.plot([], [], "co"))
+        traj.extend(ax.plot([], [], "c.", markersize=3))
+        mark.extend(ax.plot([], [], "co", markersize=8))
         vel_vector.extend(ax.plot([], [], "r-"))
         force_vector.extend(ax.plot([], [], "y-"))
         annot.append(ax.text(0, 0.4, "", color="c", fontsize=8))
@@ -79,8 +79,15 @@ def main():
         )
 
         # Save data for trajectory tail
-        x_traj = np.array([atom.pos_prev[0] for atom in sim.atoms_list])
-        y_traj = np.array([atom.pos_prev[1] for atom in sim.atoms_list])
+        traj_len = 100
+        traj_interval = 10
+        start_idx = max((traj_interval * ((frame_idx - traj_len) // traj_interval), 0))
+        x_traj = np.array(
+            [atom.traj[start_idx::traj_interval, 0] for atom in sim.atoms_list]
+        )
+        y_traj = np.array(
+            [atom.traj[start_idx::traj_interval, 1] for atom in sim.atoms_list]
+        )
 
         # # Save data for velocity arrow
         x_velvec = np.zeros((2, n_atoms))
