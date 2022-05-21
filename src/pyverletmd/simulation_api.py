@@ -97,7 +97,7 @@ class Potential:
         r_ij_mag = np.linalg.norm(r_ij_vec)
 
         if (r_ij_mag > 0) and (r_ij_mag <= self.R_1):
-            return -(-38608.67 * r_ij_mag ** (-13) + 68.744 * r_ij_mag ** (-6)) * (
+            return -(-38608.67 * r_ij_mag ** (-13) + 68.744 * r_ij_mag ** (-7)) * (
                 r_ij_vec / r_ij_mag
             )
         elif (r_ij_mag > self.R_1) and (r_ij_mag < self.R_C):
