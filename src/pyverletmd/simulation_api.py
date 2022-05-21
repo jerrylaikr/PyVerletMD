@@ -37,6 +37,9 @@ class Atom:
         self.pos = self.pos % size  # Periodic Boundary Condition
         self.pos_prev = pos_temp
 
+    def update_vel(self, dt):
+        self.vel += self.acc * dt
+
 
 class Potential:
     def __init__(self, R_1=7.0, R_C=7.5):
@@ -85,7 +88,7 @@ class Many_body_system:
         self.atoms_list.append(Atom(atom_pos, atom_vel, atom_mass))
         self.n_atoms += 1
 
-    def update_forces_and_accs(self):
+    def update_forces_accs_vel(self):
         # reset force to zero
         for atom in self.atoms_list:
             atom.reset_force()
@@ -98,9 +101,10 @@ class Many_body_system:
                 atom_i.add_force(force)
                 atom_j.add_force(-force)
 
-        # update accelerations
+        # update accelerations and velocities
         for atom in self.atoms_list:
             atom.update_acc()
+            atom.update_vel(self.dt)
 
     def next_step(self):
         # first update positions
@@ -111,11 +115,11 @@ class Many_body_system:
         for atom in self.atoms_list:
             atom.update_pos(self.dt, self.size)
 
-        self.update_forces_and_accs()
+        self.update_forces_accs_vel()
 
     def eval_prev_pos(self):
         # evaluate r(-dt)
-        self.update_forces_and_accs()
+        self.update_forces_accs_vel()
 
         for atom in self.atoms_list:
             atom.pos_prev = (
