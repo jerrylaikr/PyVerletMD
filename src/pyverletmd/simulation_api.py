@@ -84,7 +84,7 @@ class Potential:
         self.R_1 = R_1
         self.R_C = R_C
 
-    def get_force(self, atom_i: Atom, atom_j: Atom, box_size) -> np.ndarray:
+    def calc_force_btwn(self, atom_i: Atom, atom_j: Atom, box_size) -> np.ndarray:
         # force exerted by atom_j on atom_i
         # TODO: make it a real class for potential to autoatically calculate coefficients
 
@@ -107,7 +107,7 @@ class Potential:
         else:
             return np.zeros(2)
 
-    def get_PE(self, atom_i: Atom, atom_j: Atom, box_size) -> float:
+    def calc_PE_btwn(self, atom_i: Atom, atom_j: Atom, box_size) -> float:
         # distance vector cosidering PBC
         r_ij_vec = (atom_i.pos - atom_j.pos) - box_size * np.round(
             (atom_i.pos - atom_j.pos) / box_size
@@ -116,13 +116,16 @@ class Potential:
         # magnitude of distance
         r_ij_mag = np.linalg.norm(r_ij_vec)
 
-        if (r_ij_mag > 0) and (r_ij_mag <= self.R_1):
+        if 0 < r_ij_mag <= self.R_1:
+            # use original potential function
             return 4 * 0.0102 * ((2.559 / r_ij_mag) ** 12 - (2.559 / r_ij_mag) ** 6)
-        elif (r_ij_mag > self.R_1) and (r_ij_mag < self.R_C):
+        elif self.R_1 < r_ij_mag < self.R_C:
+            # use tail function
             return (-0.00122) * (r_ij_mag - 7.5) ** 3 + (-9.9968e-04) * (
                 r_ij_mag - 7.5
             ) ** 2
         else:
+            # cutoff
             return 0
 
 
@@ -152,10 +155,12 @@ class Many_body_system:
         for i in range(self.n_atoms):
             for j in range(i + 1, self.n_atoms):
                 atom_i, atom_j = self.atoms_list[i], self.atoms_list[j]
-                force = self.potential_profile.get_force(atom_i, atom_j, self.size)
+                force = self.potential_profile.calc_force_btwn(
+                    atom_i, atom_j, self.size
+                )
                 atom_i.add_force(force)
                 atom_j.add_force(-force)
-                PE = self.potential_profile.get_PE(atom_i, atom_j, self.size)
+                PE = self.potential_profile.calc_PE_btwn(atom_i, atom_j, self.size)
                 atom_i.add_PE(PE)
                 atom_j.add_PE(PE)
 
@@ -217,8 +222,8 @@ def main():
     MASS = (
         64 / 1000 / (6.02214076e23) * 6.242e22
     )  # 1[kg]/atom = 6.242e22[eV*A^2*ps^-2]/atom
-    dt = 0.02
-    n_steps = 500
+    dt = 0.002
+    n_steps = 3000
     size = [30, 30]
 
     # initialize simulation box
