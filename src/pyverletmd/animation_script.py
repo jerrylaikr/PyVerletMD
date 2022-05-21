@@ -11,8 +11,8 @@ def main():
     MASS = (
         64 / 1000 / (6.02214076e23) * 6.242e22
     )  # 1[kg]/atom = 6.242e22[eV*A^2*ps^-2]/atom
-    dt = 0.02
-    n_steps = 300
+    dt = 0.002
+    n_steps = 3000
     size = [30, 30]
 
     # initialize simulation box
@@ -29,7 +29,7 @@ def main():
 
     # ===Initialize Plot Canvas===
     plt.style.use("dark_background")
-    fig = plt.figure()
+    fig = plt.figure(figsize=(12, 12))
     ax = plt.axes(xlim=(0, sim.size[0]), ylim=(0, sim.size[1]), aspect="equal")
     time_text = ax.text(0.02, 0.95, "", transform=ax.transAxes)
     debug_text = ax.text(0.02, 0.75, "", transform=ax.transAxes, fontsize=8)
@@ -41,7 +41,7 @@ def main():
     force_vector = []
     annot = []
     for _ in range(n_atoms):
-        traj.extend(ax.plot([], [], "c.", markersize=3))
+        traj.extend(ax.plot([], [], "c.", markersize=4))
         mark.extend(ax.plot([], [], "co", markersize=8))
         vel_vector.extend(ax.plot([], [], "r-"))
         force_vector.extend(ax.plot([], [], "y-"))
@@ -79,8 +79,8 @@ def main():
         )
 
         # Save data for trajectory tail
-        traj_len = 100
-        traj_interval = 10
+        traj_len = 500
+        traj_interval = 50
         start_idx = max((traj_interval * ((frame_idx - traj_len) // traj_interval), 0))
         x_traj = np.array(
             [atom.traj[start_idx::traj_interval, 0] for atom in sim.atoms_list]
@@ -148,7 +148,7 @@ def main():
     plt.show()
 
     # f = r""
-    # writergif = animation.PillowWriter(fps=10, bitrate=50)
+    # writergif = animation.PillowWriter(fps=30, bitrate=50)
     # anim.save(f, writer=writergif)
 
 
