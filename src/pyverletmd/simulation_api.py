@@ -28,6 +28,12 @@ class Atom:
     def add_force(self, force_by_atom_j):
         self.force += force_by_atom_j
 
+    def reset_PE(self):
+        self.PE = 0
+
+    def add_PE(self, PE_with_atom_j):
+        self.PE += PE_with_atom_j
+
     def update_acc(self):
         self.acc = self.force / self.mass
 
@@ -71,6 +77,24 @@ class Potential:
         else:
             return np.zeros(2)
 
+    def get_PE(self, atom_i: Atom, atom_j: Atom, box_size) -> float:
+        # distance vector cosidering PBC
+        r_ij_vec = (atom_i.pos - atom_j.pos) - box_size * np.round(
+            (atom_i.pos - atom_j.pos) / box_size
+        )
+
+        # magnitude of distance
+        r_ij_mag = np.linalg.norm(r_ij_vec)
+
+        if (r_ij_mag > 0) and (r_ij_mag <= self.R_1):
+            return 4 * 0.0102 * ((2.559 / r_ij_mag) ** 12 - (2.559 / r_ij_mag) ** 6)
+        elif (r_ij_mag > self.R_1) and (r_ij_mag < self.R_C):
+            return (-0.00122) * (r_ij_mag - 7.5) ** 3 + (-9.9968e-04) * (
+                r_ij_mag - 7.5
+            ) ** 2
+        else:
+            return 0
+
 
 class Many_body_system:
     def __init__(self, size: list, potential_profile: Potential, dt: float):
@@ -89,17 +113,21 @@ class Many_body_system:
         self.n_atoms += 1
 
     def update_forces_accs_vel(self):
-        # reset force to zero
+        # reset force and PE to zero
         for atom in self.atoms_list:
             atom.reset_force()
+            atom.reset_PE()
 
-        # add force pairs
+        # add force pairs and PEs
         for i in range(self.n_atoms):
             for j in range(i, self.n_atoms):
                 atom_i, atom_j = self.atoms_list[i], self.atoms_list[j]
                 force = self.potential_profile.get_force(atom_i, atom_j, self.size)
                 atom_i.add_force(force)
                 atom_j.add_force(-force)
+                PE = self.potential_profile.get_PE(atom_i, atom_j, self.size)
+                atom_i.add_PE(PE)
+                atom_j.add_PE(PE)
 
         # update accelerations and velocities
         for atom in self.atoms_list:
@@ -125,6 +153,12 @@ class Many_body_system:
             atom.pos_prev = (
                 atom.pos - atom.vel * self.dt - (self.dt**2 / 2) * atom.acc
             )
+
+    def get_system_KE(self):
+        return sum([atom.get_KE() for atom in self.atoms_list])
+
+    def get_system_PE(self):
+        return sum([atom.PE for atom in self.atoms_list])
 
 
 def main():
@@ -165,17 +199,24 @@ def main():
     # evaluate prev positions
     sim.eval_prev_pos()
 
+    inital_total_energy = sim.get_system_KE() + sim.get_system_PE()
+    print(f"initial total energy = {inital_total_energy}")
+
     # start loop
     for idx in range(n_steps):
         # output info of current state
         print(
             "frame = {}, time = {:.3f}ps / {:.3f}ps".format(idx, idx * dt, n_steps * dt)
         )
-        for i in range(sim.n_atoms):
-            print(f"atom {i}:")
-            atom = sim.atoms_list[i]
-            print(f"\tpos: {atom.pos}")
-            # print(f"\tfor: {atom.force}")
+        total_energy = sim.get_system_KE() + sim.get_system_PE()
+        print(
+            f"total energy = {total_energy}, ratio = {total_energy/inital_total_energy}"
+        )
+        # for i in range(sim.n_atoms):
+        # print(f"atom {i}:")
+        # atom = sim.atoms_list[i]
+        # print(f"\tpos: {atom.pos}")
+        # print(f"\tfor: {atom.force}")
 
         # update to next state
         sim.next_step()
