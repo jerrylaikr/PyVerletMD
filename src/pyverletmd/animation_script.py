@@ -11,8 +11,8 @@ def main():
     MASS = (
         64 / 1000 / (6.02214076e23) * 6.242e22
     )  # 1[kg]/atom = 6.242e22[eV*A^2*ps^-2]/atom
-    dt = 0.002
-    n_steps = 3000
+    dt = 0.02
+    n_steps = 300
     size = [30, 30]
 
     # initialize simulation box
@@ -39,11 +39,13 @@ def main():
     mark = []
     vel_vector = []
     force_vector = []
+    annot = []
     for _ in range(n_atoms):
         traj.extend(ax.plot([], [], "c."))
         mark.extend(ax.plot([], [], "co"))
         vel_vector.extend(ax.plot([], [], "r-"))
         force_vector.extend(ax.plot([], [], "y-"))
+        annot.append(ax.text(0, 0.4, "", color="c", fontsize=8))
 
     # ===Initialization Function===
     def init():
@@ -52,11 +54,12 @@ def main():
             mark[i].set_data([], [])
             vel_vector[i].set_data([], [])
             force_vector[i].set_data([], [])
+            annot[i].set_text("")
 
         time_text.set_text("")
         debug_text.set_text("")
 
-        return traj + mark + vel_vector + force_vector + [time_text, debug_text]
+        return traj + mark + vel_vector + force_vector + annot + [time_text, debug_text]
 
     # ===Animation Function===
     def animate(frame_idx):
@@ -109,7 +112,6 @@ def main():
         #     print(f"\tpos: {x_mark[i]}, {y_mark[i]}") # FOR TESTING
 
         # Create 2Dlines: traj and mark, and add annotation
-        annot = []
         for i in range(n_atoms):
             traj[i].set_data(x_traj[i], y_traj[i])
             mark[i].set_data(x_mark[i], y_mark[i])
@@ -118,9 +120,8 @@ def main():
             # print(str(x_mark[i]) + "," + str(y_mark[i]))
             # Add annotation of atom id
             annot_text = str("Atom[{}]".format(i))
-            annot.append(
-                ax.text(x_mark[i], y_mark[i] + 0.4, annot_text, color="c", fontsize=8)
-            )
+            annot[i].set_text(annot_text)
+            annot[i].set_position((x_mark[i], y_mark[i] + 0.4))
 
         return traj + mark + vel_vector + force_vector + annot + [time_text, debug_text]
 
@@ -136,6 +137,10 @@ def main():
     )
 
     plt.show()
+
+    # f = r""
+    # writergif = animation.PillowWriter(fps=10, bitrate=50)
+    # anim.save(f, writer=writergif)
 
 
 if __name__ == "__main__":
