@@ -19,32 +19,64 @@ class Atom:
         # previous position
         self.pos_prev: np.ndarray = np.zeros(2)
 
+        # flag to check if properties have been updated
+        self._updated = {
+            "force": False,
+            "vel": False,
+            "acc": False,
+            "PE": False,
+        }
+        self._updated_counter = {
+            "force": 0,
+            "PE": 0,
+        }
+
     def get_KE(self):
-        return 0.5 * self.mass * (self.vel[0] ** 2 + self.vel[1] ** 2)
+        return (
+            0.5 * self.mass * (self.vel[0] ** 2 + self.vel[1] ** 2)
+        )  # np.linalg.norm(self.vel)** 2
 
     def reset_force(self):
         self.force = np.zeros(2)
+        self._updated_counter["force"] = 0
 
     def add_force(self, force_by_atom_j):
         self.force += force_by_atom_j
+        self._updated_counter["force"] += 1
 
     def reset_PE(self):
         self.PE = 0
+        self._updated_counter["PE"] = 0
 
     def add_PE(self, PE_with_atom_j):
         self.PE += PE_with_atom_j
+        self._updated_counter["PE"] += 1
 
     def update_acc(self):
+        if not self._updated["force"]:
+            raise RuntimeError("force has not been updated")
         self.acc = self.force / self.mass
+        self._updated["acc"] = True
 
     def update_pos(self, dt, size):
+        for prop in ("force", "acc", "vel"):
+            if not self._updated[prop]:
+                raise RuntimeError(f"{prop} has not been updated")
         pos_temp = np.array(self.pos)  # later this will be the prev position
         self.pos = 2 * self.pos - self.pos_prev + (dt**2 * self.acc)
         self.pos = self.pos % size  # Periodic Boundary Condition
         self.pos_prev = np.array(pos_temp)
 
+        # reset "updated" flags
+        self._updated["force"] = False
+        self._updated["acc"] = False
+        self._updated["vel"] = False
+
     def update_vel(self, dt):
+        if not self._updated["acc"]:
+            raise RuntimeError("acc has not been updated")
         self.vel += self.acc * dt
+        self._updated["vel"] = True
 
 
 class Potential:
@@ -112,7 +144,7 @@ class Many_body_system:
         self.atoms_list.append(Atom(atom_pos, atom_vel, atom_mass))
         self.n_atoms += 1
 
-    def update_forces_accs_vel(self):
+    def update_all_except_pos(self):
         # reset force and PE to zero
         for atom in self.atoms_list:
             atom.reset_force()
@@ -120,7 +152,7 @@ class Many_body_system:
 
         # add force pairs and PEs
         for i in range(self.n_atoms):
-            for j in range(i, self.n_atoms):
+            for j in range(i + 1, self.n_atoms):
                 atom_i, atom_j = self.atoms_list[i], self.atoms_list[j]
                 force = self.potential_profile.get_force(atom_i, atom_j, self.size)
                 atom_i.add_force(force)
@@ -131,6 +163,10 @@ class Many_body_system:
 
         # update accelerations and velocities
         for atom in self.atoms_list:
+            if atom._updated_counter["force"] == self.n_atoms - 1:
+                atom._updated["force"] = True
+            if atom._updated_counter["PE"] == self.n_atoms - 1:
+                atom._updated["PE"] = True
             atom.update_acc()
             atom.update_vel(self.dt)
 
@@ -143,11 +179,11 @@ class Many_body_system:
         for atom in self.atoms_list:
             atom.update_pos(self.dt, self.size)
 
-        self.update_forces_accs_vel()
+        self.update_all_except_pos()
 
     def eval_prev_pos(self):
         # evaluate r(-dt)
-        self.update_forces_accs_vel()
+        self.update_all_except_pos()
 
         for atom in self.atoms_list:
             atom.pos_prev = (
