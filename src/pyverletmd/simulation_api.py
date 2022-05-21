@@ -32,9 +32,7 @@ class Atom:
         }
 
     def get_KE(self):
-        return (
-            0.5 * self.mass * (self.vel[0] ** 2 + self.vel[1] ** 2)
-        )  # np.linalg.norm(self.vel)** 2
+        return 0.5 * self.mass * (np.linalg.norm(self.vel) ** 2)
 
     def reset_force(self):
         self.force = np.zeros(2)
