@@ -63,11 +63,8 @@ def main():
 
     # ===Animation Function===
     def animate(frame_idx):
-        idx = frame_idx + 1
         print(
-            "Plotting: frame={}, idx={}, t={:.3f}ps".format(
-                frame_idx, idx, frame_idx * dt
-            )
+            "Plotting: frame={}, t={:.3f}ps".format(frame_idx, frame_idx * dt)
         )  # FOR TESTING
         time_text.set_text(
             "frame = {}, time = {:.3f}ps / {:.3f}ps".format(
@@ -75,9 +72,11 @@ def main():
             )
         )
 
-        # update to next state
-        sim.next_step()
-        debug_text.set_text("idx = {}\n".format(idx))
+        debug_text.set_text(
+            "time_elapsed = {:.3f}\nKE = {:.5f}\nPE = {:.5f}".format(
+                sim.time_elapsed, sim.get_system_KE(), sim.get_system_PE()
+            )
+        )
 
         # Save data for trajectory tail
         x_traj = np.array([atom.pos_prev[0] for atom in sim.atoms_list])
@@ -123,6 +122,9 @@ def main():
             annot[i].set_text(annot_text)
             annot[i].set_position((x_mark[i], y_mark[i] + 0.4))
 
+        # update to next state
+        sim.next_step()
+
         return traj + mark + vel_vector + force_vector + annot + [time_text, debug_text]
 
     # ===Call The Animator===
@@ -130,7 +132,7 @@ def main():
         fig,
         animate,
         init_func=init,
-        frames=n_steps,
+        frames=n_steps + 1,
         interval=1,
         blit=True,
         repeat=False,
