@@ -34,10 +34,10 @@ PyVerletMD
 ==========
 
 
-    Add a short description here!
+    A simple 2-dimensional molecular dynamics simulator using Verlet algorithm
 
 
-A longer description of your project goes here...
+<A comprehensive description which I have no time to finish>
 
 
 .. _pyscaffold-notes:
