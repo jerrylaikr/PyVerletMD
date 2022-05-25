@@ -37,7 +37,8 @@ PyVerletMD
     A simple 2-dimensional molecular dynamics simulator using Verlet algorithm
 
 
-<ADD VISILIZATION SAMPLE HERE>
+.. image:: ./example.png
+  :alt: visualization example image
 
 Based on former McGill University MIME 473 midterm project.
 
