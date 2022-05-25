@@ -219,6 +219,9 @@ class Many_body_system:
         self.atoms_list: list[Atom] = []
         self.dt: float = dt
         self.time_elapsed: float = 0.0
+        
+        # flag to check if state at t=-dt has been evaluated 
+        self.neg_step_evaluated = False
 
     def add_atom(self, atom_pos:list, atom_vel:list, atom_mass:float):
         """
@@ -277,6 +280,10 @@ class Many_body_system:
         instead of those at previous timestep
         At t=0, properties are updated by calling eval_prev_pos() before moving to next timestep.
         """
+       # check if state at t=-dt has been evaluated 
+        if not self.neg_step_evaluated:
+            self.eval_prev_pos()
+
         for atom in self.atoms_list:
             atom.update_pos(self.dt, self.size)
 
@@ -288,12 +295,20 @@ class Many_body_system:
         Evaluate position of all atoms 1 timestep before the initial state.
         r(-dt) = r(0) - v(0) * dt - (dt^2 / 2) * a(t)
         """
+        if self.neg_step_evaluated:
+            # this method should only be called once
+            # raise RuntimeError("This method shouldn't be calle if state at t=-dt has been evaluated")
+            return
+
         self.update_all_except_pos()
 
         for atom in self.atoms_list:
             atom.pos_prev = (
                 atom.pos - atom.vel * self.dt - (self.dt**2 / 2) * atom.acc
             )
+        
+        # set flag
+        self.neg_step_evaluated = True
 
     def get_system_KE(self):
         """Return total kinetic energy of all atoms in unit [eV]."""
