@@ -1,5 +1,5 @@
 import numpy as np
-
+# TODO: verify if velocity should be updated BEFORE or AFTER updating position
 
 class Atom:
     """
@@ -55,7 +55,7 @@ class Atom:
         KE = (1/2) mv^2
         """
         if not self._updated["vel"]:
-            raise RuntimeError("velocity has not been updated")
+            raise RuntimeError("velocity has not been updated, unable to get kinetic energy")
         return 0.5 * self.mass * (np.linalg.norm(self.vel) ** 2)
 
     def reset_force(self):
@@ -96,7 +96,7 @@ class Atom:
         a = F/m
         """
         if not self._updated["force"]:
-            raise RuntimeError("force has not been updated")
+            raise RuntimeError("Force has not been updated, unable to update acceleration")
         self.acc = self.force / self.mass
         self._updated["acc"] = True
 
@@ -110,12 +110,12 @@ class Atom:
         Parameters:
             dt (float): Size of timestep in unit [ps].
             size (np.ndarray): shape=(2,)
-                Size of the simulation box.
+                Size of the simulation box in unit [A].
         """
         # check if force, acceleration, and velocity have been updated
         for prop in ("force", "acc", "vel"):
             if not self._updated[prop]:
-                raise RuntimeError(f"{prop} has not been updated")
+                raise RuntimeError(f"{prop} has not been updated, unable to update position")
         pos_temp = np.array(self.pos)  # later this will be the prev position
 
         # use Verlet algorithm
@@ -140,7 +140,7 @@ class Atom:
             dt (float): Size of timestep in unit [ps].
         """
         if not self._updated["acc"]:
-            raise RuntimeError("acc has not been updated")
+            raise RuntimeError("Acceleration has not been updated, unable to update velocity")
         self.vel += self.acc * dt
         self._updated["vel"] = True
 
@@ -198,7 +198,20 @@ class Potential:
 
 
 class Many_body_system:
+    """
+    Class for the simulation system.
+    """
     def __init__(self, size: list, potential_profile: Potential, dt: float):
+        """
+        Init method.
+
+        Parameters:
+            size (list): shape=(2,)
+                Size of the simulation box in unit [A].
+            potential_profile (Potential):
+                Potential object that describes the interactive potential between atoms in this system.
+            dt (float): Size of timestep in unit [ps].
+        """
         self.size: np.ndarray = np.array(size)
         self.potential_profile: Potential = potential_profile
 
@@ -207,7 +220,19 @@ class Many_body_system:
         self.dt: float = dt
         self.time_elapsed: float = 0.0
 
-    def add_atom(self, atom_pos, atom_vel, atom_mass):
+    def add_atom(self, atom_pos:list, atom_vel:list, atom_mass:float):
+        """
+        Add new atom to the system.
+
+        Parameters:
+            atom_pos (list): shape=(2,)
+                Initial position vector of this atom. (pos_x, pos_y)
+            atom_vel (list): shape=(2,)
+                Initial velocity vector of this atom. (vel_x, vel_y)
+            atom_mass (float):
+                Mass of atom in unit [eV*A^2*ps^-2]
+                1[kg] = 6.242e22[eV*A^2*ps^-2]
+        """
         if not (0 <= atom_pos[0] <= self.size[0] and 0 <= atom_pos[1] <= self.size[1]):
             raise ValueError("atom out of simulation box")
 
@@ -215,6 +240,7 @@ class Many_body_system:
         self.n_atoms += 1
 
     def update_all_except_pos(self):
+        """Update force, velocity, acceleration, and potential energy of all atoms."""
         # reset force and PE to zero
         for atom in self.atoms_list:
             atom.reset_force()
@@ -243,11 +269,14 @@ class Many_body_system:
             atom.update_vel(self.dt)
 
     def next_step(self):
-        # first update positions
-        # then update forces and accelerations
-        # at t=0, forces are updated before moving to next step
-        # we want to be able to extract the forces and accs AT each timestep
-        # not those AT prev timestep
+        """
+        Update the system to next timestep.
+        First update positions of all atoms in the system.
+        Then update other properties according to the updated positions.
+        We want to be able to extract the properties AT each timestep, 
+        instead of those at previous timestep
+        At t=0, properties are updated by calling eval_prev_pos() before moving to next timestep.
+        """
         for atom in self.atoms_list:
             atom.update_pos(self.dt, self.size)
 
@@ -255,7 +284,10 @@ class Many_body_system:
         self.time_elapsed += self.dt
 
     def eval_prev_pos(self):
-        # evaluate r(-dt)
+        """
+        Evaluate position of all atoms 1 timestep before the initial state.
+        r(-dt) = r(0) - v(0) * dt - (dt^2 / 2) * a(t)
+        """
         self.update_all_except_pos()
 
         for atom in self.atoms_list:
@@ -264,9 +296,11 @@ class Many_body_system:
             )
 
     def get_system_KE(self):
+        """Return total kinetic energy of all atoms in unit [eV]."""
         return sum([atom.get_KE() for atom in self.atoms_list])
 
     def get_system_PE(self):
+        """Return total potential energy of all atoms in unit [eV]."""
         return sum([atom.PE for atom in self.atoms_list])
 
 
