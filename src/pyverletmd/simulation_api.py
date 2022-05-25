@@ -173,6 +173,8 @@ class Atom:
 class Potential:
     """
     Base class for interatomic potential profiles.
+    TODO: make it more robust to allow creating different types of potentials (e.g. LJ, Morse).
+    TODO: add feature to support automatic calculation of potential derivatives and tail functions.
     """
 
     def __init__(self, R_1, R_C):
@@ -235,7 +237,6 @@ class Dummy_LJ_potential(Potential):
             F = -dV_tail/dr = -(-0.0036 * (r-R_C)^2 - 0.0001994 * (r-R_C))
             F_x = -dV_tail/dr * (r_x / r)
         """
-        # TODO: make it a real class for potential to autoatically calculate coefficients
 
         # calculate distance vector cosidering PBC
         r_ij_vec = (atom_i.pos - atom_j.pos) - box_size * np.round(
