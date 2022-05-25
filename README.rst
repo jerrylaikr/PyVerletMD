@@ -42,26 +42,19 @@ PyVerletMD
 Based on former McGill University MIME 473 midterm project.
 
 So there was this project where we were asked to write a MATLAB script to perform a simple 2D molecular dynamics simulation implementing Verlet algorithm.
-
 Well I think one could just hard-code the script, but I made it kinda modular (I guess?) with many functions blahblah. 
-
 I also add some sketchy live-plotting feature for better visualization (rather than writing a dump file and visulize in OVITO). 
-
 After I finished the first version of my MATLAB script, I gave it to some of my friends as a reference while I went on to optimize my code. 
 
 It was a pretty interesting project, mainly because the live-plotting was kinda cool. 
-
 Anyway I now decide to re-write it in Python in a more "object-oriented" fashion. 
-
 The "not-so-object-oriented" version can be found in the legacy_code.py, where most things are hard-coded. 
 
 Funny story: 
+
 2 years after I took MIME 473, I became the TA of this course. 
-
 The midterm project did not change. 
-
 When grading the codes submitted by students, I surprisingly found several scripts with hacky implementations that were way too familiar. 
-
 Apparently the my script got shared pretty widely. And after 2 years, no one cared to check who was the author of that poop mountain. 
 
 Another year later, professor had to change the topic of the midterm project (sorry prof.). 
