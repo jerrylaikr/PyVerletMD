@@ -9,6 +9,11 @@ __license__ = "MIT"
 
 
 def main():
+    """
+    Script to visualize the MD simulation while calculating.
+    CLI is work in progress.
+    Live plotting is not working on system without GUI. Please save animation instead.
+    """
     # ===Params===
     R_1 = 7.0
     R_C = 7.5
@@ -41,11 +46,11 @@ def main():
     debug_text = ax.text(0.02, 0.75, "", transform=ax.transAxes, fontsize=8)
 
     n_atoms = sim.n_atoms
-    traj = []
-    mark = []
-    vel_vector = []
-    force_vector = []
-    annot = []
+    traj = []  # for plotting atom trajectories
+    mark = []  # for plotting atom positions
+    vel_vector = []  # for plotting velocity vectors
+    force_vector = []  # for plotting force vectors
+    annot = []  # for marking atom indices
     for _ in range(n_atoms):
         traj.extend(ax.plot([], [], "c.", markersize=3))
         mark.extend(ax.plot([], [], "co", markersize=8))

@@ -303,10 +303,10 @@ class Many_body_system:
         self.size: np.ndarray = np.array(size)
         self.potential_profile: Potential = potential_profile
 
-        self.n_atoms: int = 0
-        self.atoms_list: list[Atom] = []
-        self.dt: float = dt
-        self.time_elapsed: float = 0.0
+        self.n_atoms: int = 0  # total number of atoms in the simulation box
+        self.atoms_list: list[Atom] = []  # list of atoms in the simulation box
+        self.dt: float = dt  # timestep size
+        self.time_elapsed: float = 0.0  # current time
 
         # flag to check if state at t=-dt has been evaluated
         self.neg_step_evaluated = False
