@@ -1,5 +1,9 @@
 import numpy as np
 
+__author__ = "jerrylaikr"
+__copyright__ = "jerrylaikr"
+__license__ = "MIT"
+
 
 class Atom:
     """

@@ -3,6 +3,10 @@ from matplotlib import pyplot as plt
 from matplotlib import animation
 from pyverletmd.simulation_api import Many_body_system, Dummy_LJ_potential
 
+__author__ = "jerrylaikr"
+__copyright__ = "jerrylaikr"
+__license__ = "MIT"
+
 
 def main():
     # ===Params===
