@@ -1,10 +1,13 @@
 import numpy as np
+
 # TODO: verify if velocity should be updated BEFORE or AFTER updating position
+
 
 class Atom:
     """
     Class for particles in the simulation.
     """
+
     def __init__(self, pos: list[float], vel: list[float], mass: float):
         """
         Init method.
@@ -55,7 +58,9 @@ class Atom:
         KE = (1/2) mv^2
         """
         if not self._updated["vel"]:
-            raise RuntimeError("velocity has not been updated, unable to get kinetic energy")
+            raise RuntimeError(
+                "velocity has not been updated, unable to get kinetic energy"
+            )
         return 0.5 * self.mass * (np.linalg.norm(self.vel) ** 2)
 
     def reset_force(self):
@@ -63,10 +68,10 @@ class Atom:
         self.force = np.zeros(2)
         self._updated_counter["force"] = 0
 
-    def add_force(self, force_by_atom_j:np.ndarray):
+    def add_force(self, force_by_atom_j: np.ndarray):
         """
         Add force vector exerted by atom_j on this atom.
-        
+
         Parameters:
             force_by_atom_j (ndarray): shape=(2,)
                 Force vector exerted by atom_j on this atom.
@@ -79,10 +84,10 @@ class Atom:
         self.PE = 0
         self._updated_counter["PE"] = 0
 
-    def add_PE(self, PE_with_atom_j:float):
+    def add_PE(self, PE_with_atom_j: float):
         """
         Add potential energy raised from interaction between atom_j and this atom.
-        
+
         Parameters:
             PE_with_atom_j (float): Potential energy raised from interaction between atom_j and this atom.
         """
@@ -96,11 +101,13 @@ class Atom:
         a = F/m
         """
         if not self._updated["force"]:
-            raise RuntimeError("Force has not been updated, unable to update acceleration")
+            raise RuntimeError(
+                "Force has not been updated, unable to update acceleration"
+            )
         self.acc = self.force / self.mass
         self._updated["acc"] = True
 
-    def update_pos(self, dt:float, size:np.ndarray):
+    def update_pos(self, dt: float, size: np.ndarray):
         """
         Update position vector of this atom to the next timestep.
         Should only be executed after updating force, acceleration, and velocity.
@@ -115,7 +122,9 @@ class Atom:
         # check if force, acceleration, and velocity have been updated
         for prop in ("force", "acc", "vel"):
             if not self._updated[prop]:
-                raise RuntimeError(f"{prop} has not been updated, unable to update position")
+                raise RuntimeError(
+                    f"{prop} has not been updated, unable to update position"
+                )
         pos_temp = np.array(self.pos)  # later this will be the prev position
 
         # use Verlet algorithm
@@ -140,28 +149,73 @@ class Atom:
             dt (float): Size of timestep in unit [ps].
         """
         if not self._updated["acc"]:
-            raise RuntimeError("Acceleration has not been updated, unable to update velocity")
+            raise RuntimeError(
+                "Acceleration has not been updated, unable to update velocity"
+            )
         self.vel += self.acc * dt
         self._updated["vel"] = True
 
 
 class Potential:
-    def __init__(self, R_1=7.0, R_C=7.5):
-        # R_1: transition distance
-        # R_C: cut-off distance
+    def __init__(self, R_1, R_C):
+        # R_1: transition radius
+        # R_C: cut-off radius
         self.R_1 = R_1
         self.R_C = R_C
 
     def calc_force_btwn(self, atom_i: Atom, atom_j: Atom, box_size) -> np.ndarray:
-        # force exerted by atom_j on atom_i
+        """
+        Class method to calculate force exerted BY atom_j ON atom_i.
+
+        Parameters:
+            atom_i (Atom): The atom experiencing force.
+            atom_j (Atom): The atom exerting force.
+            box_size (np.ndarray): shape=(2,)
+                Size of the simulation box in unit [A].
+
+        Return:
+            (np.ndarray): shape=(2,)
+                Force vector exerted BY atom_j ON atom_i.
+        """
+        return np.zeros(2)
+
+    def calc_PE_btwn(self, atom_i: Atom, atom_j: Atom, box_size) -> float:
+        """
+        Class method to calculate potential energy raised from interaction between atom_i and atom_j.
+
+        Parameters:
+            atom_i (Atom): one atom in the system.
+            atom_j (Atom): another atom in the system.
+            box_size (np.ndarray): shape=(2,)
+                Size of the simulation box in unit [A].
+
+        Return:
+            (float): Potential energy raised from interaction between atom_i and atom_j.
+        """
+        return 0
+
+
+class Dummy_LJ_potential(Potential):
+    def __init__(self, R_1=7.0, R_C=7.5):
+        super().__init__(R_1=R_1, R_C=R_C)
+
+    def calc_force_btwn(self, atom_i: Atom, atom_j: Atom, box_size) -> np.ndarray:
+        """
+        Distance less than transition radius:
+            F = -dV/dr = -(-38608.67*r^-13 + 68.744*r^-7)
+            F_x = -dV/dr * (r_x / r)
+        Distance greater than transition radius but less than cut-off radius (use tail function):
+            F = -dV_tail/dr = -(-0.0036 * (r-R_C)^2 - 0.0001994 * (r-R_C))
+            F_x = -dV_tail/dr * (r_x / r)
+        """
         # TODO: make it a real class for potential to autoatically calculate coefficients
 
-        # distance vector cosidering PBC
+        # calculate distance vector cosidering PBC
         r_ij_vec = (atom_i.pos - atom_j.pos) - box_size * np.round(
             (atom_i.pos - atom_j.pos) / box_size
         )
 
-        # magnitude of distance
+        # calculate magnitude of distance
         r_ij_mag = np.linalg.norm(r_ij_vec)
 
         if (r_ij_mag > 0) and (r_ij_mag <= self.R_1):
@@ -176,7 +230,13 @@ class Potential:
             return np.zeros(2)
 
     def calc_PE_btwn(self, atom_i: Atom, atom_j: Atom, box_size) -> float:
-        # distance vector cosidering PBC
+        """
+        Distance less than transition radius:
+            Ep_LJ = 4*0.0102*((2.559/r)^12-(2.559/r)^6)
+        Distance greater than transition radius but less than cut-off radius (use tail function):
+            Ep_cut = (-0.00122)*(r-R_C)^3+(-9.9968e-04)*(r-R_C)^2
+        """
+        # calculate distance vector cosidering PBC
         r_ij_vec = (atom_i.pos - atom_j.pos) - box_size * np.round(
             (atom_i.pos - atom_j.pos) / box_size
         )
@@ -189,8 +249,8 @@ class Potential:
             return 4 * 0.0102 * ((2.559 / r_ij_mag) ** 12 - (2.559 / r_ij_mag) ** 6)
         elif self.R_1 < r_ij_mag < self.R_C:
             # use tail function
-            return (-0.00122) * (r_ij_mag - 7.5) ** 3 + (-9.9968e-04) * (
-                r_ij_mag - 7.5
+            return (-0.00122) * (r_ij_mag - self.R_C) ** 3 + (-9.9968e-04) * (
+                r_ij_mag - self.R_C
             ) ** 2
         else:
             # cutoff
@@ -201,6 +261,7 @@ class Many_body_system:
     """
     Class for the simulation system.
     """
+
     def __init__(self, size: list, potential_profile: Potential, dt: float):
         """
         Init method.
@@ -219,11 +280,11 @@ class Many_body_system:
         self.atoms_list: list[Atom] = []
         self.dt: float = dt
         self.time_elapsed: float = 0.0
-        
-        # flag to check if state at t=-dt has been evaluated 
+
+        # flag to check if state at t=-dt has been evaluated
         self.neg_step_evaluated = False
 
-    def add_atom(self, atom_pos:list, atom_vel:list, atom_mass:float):
+    def add_atom(self, atom_pos: list, atom_vel: list, atom_mass: float):
         """
         Add new atom to the system.
 
@@ -276,11 +337,11 @@ class Many_body_system:
         Update the system to next timestep.
         First update positions of all atoms in the system.
         Then update other properties according to the updated positions.
-        We want to be able to extract the properties AT each timestep, 
+        We want to be able to extract the properties AT each timestep,
         instead of those at previous timestep
         At t=0, properties are updated by calling eval_prev_pos() before moving to next timestep.
         """
-       # check if state at t=-dt has been evaluated 
+        # check if state at t=-dt has been evaluated
         if not self.neg_step_evaluated:
             self.eval_prev_pos()
 
@@ -306,7 +367,7 @@ class Many_body_system:
             atom.pos_prev = (
                 atom.pos - atom.vel * self.dt - (self.dt**2 / 2) * atom.acc
             )
-        
+
         # set flag
         self.neg_step_evaluated = True
 
@@ -346,7 +407,9 @@ def main():
     size = [30, 30]
 
     # initialize simulation box
-    sim = Many_body_system(size=size, potential_profile=Potential(R_1, R_C), dt=dt)
+    sim = Many_body_system(
+        size=size, potential_profile=Dummy_LJ_potential(R_1, R_C), dt=dt
+    )
     sim.add_atom([2, 4], [-1.98, -1.24], MASS)
     sim.add_atom([15, 10], [-2.38, -2.02], MASS)
     sim.add_atom([9, 6], [3.08, 2.52], MASS)
