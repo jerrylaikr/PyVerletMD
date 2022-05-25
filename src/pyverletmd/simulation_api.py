@@ -43,7 +43,7 @@ class Atom:
         # flag to check if properties have been updated
         self._updated = {
             "force": False,
-            "vel": False,
+            "vel": True,
             "acc": False,
             "PE": False,
         }
@@ -140,26 +140,47 @@ class Atom:
         self._updated["acc"] = False
         self._updated["vel"] = False
 
-    def update_vel(self, dt):
+    def update_vel(self, dt: float, size: np.ndarray):
         """
         Update velocity vector of this atom at current timestep.
         Should only be executed after updating acceleration.
+        Should not be executed at t=0.
+        v(t) = (r(t) - r(t-dt)) / dt + dt * a(t) / 2
 
         Parameters:
             dt (float): Size of timestep in unit [ps].
+            size (np.ndarray): shape=(2,)
+                Size of the simulation box in unit [A].
         """
         if not self._updated["acc"]:
             raise RuntimeError(
                 "Acceleration has not been updated, unable to update velocity"
             )
-        self.vel += self.acc * dt
+
+        # calculate displacement from previous position
+        # PBC should be considered
+        disp = (self.pos - self.pos_prev) - size * np.round(
+            (self.pos - self.pos_prev) / size
+        )
+
+        # calculate velocity vector at current timestep
+        self.vel = disp / dt + dt * self.acc / 2
         self._updated["vel"] = True
 
 
 class Potential:
+    """
+    Base class for interatomic potential profiles.
+    """
+
     def __init__(self, R_1, R_C):
-        # R_1: transition radius
-        # R_C: cut-off radius
+        """
+        Init method.
+
+        Parameters:
+            R_1 (float): transition radius in unit [A].
+            R_C (float): cut-off radius in unit [A].
+        """
         self.R_1 = R_1
         self.R_C = R_C
 
@@ -196,6 +217,10 @@ class Potential:
 
 
 class Dummy_LJ_potential(Potential):
+    """
+    Dummy potential class using Lennard-Jones potential.
+    """
+
     def __init__(self, R_1=7.0, R_C=7.5):
         super().__init__(R_1=R_1, R_C=R_C)
 
@@ -330,7 +355,9 @@ class Many_body_system:
             if atom._updated_counter["PE"] == self.n_atoms - 1:
                 atom._updated["PE"] = True
             atom.update_acc()
-            atom.update_vel(self.dt)
+            if not atom._updated["vel"]:
+                # do not update velocity at t=0
+                atom.update_vel(self.dt, self.size)
 
     def next_step(self):
         """
@@ -358,7 +385,7 @@ class Many_body_system:
         """
         if self.neg_step_evaluated:
             # this method should only be called once
-            # raise RuntimeError("This method shouldn't be calle if state at t=-dt has been evaluated")
+            # raise RuntimeError("This method shouldn't be called if state at t=-dt has been evaluated")
             return
 
         self.update_all_except_pos()
@@ -382,18 +409,18 @@ class Many_body_system:
 
 def main():
     """
-    initialize simulation box
-    add atoms
-
-    evaluate prev positions
-
-    for timestep in timesteps:
-        output info at current timestep:
+    Test script.
+    Typical steps of usage:
+    - initialize simulation box
+    - add atoms
+    - evaluate prev positions
+    - for timestep in timesteps:
+        - output info at current timestep:
             position of all atoms
             PE and KE of the system
             trajectory of all atoms
             ...
-        update system to next timestep
+        - update system to next timestep
     """
 
     # ===Params===
@@ -402,8 +429,8 @@ def main():
     MASS = (
         64 / 1000 / (6.02214076e23) * 6.242e22
     )  # 1[kg]/atom = 6.242e22[eV*A^2*ps^-2]/atom
-    dt = 0.002
-    n_steps = 3000
+    dt = 0.2
+    n_steps = 30
     size = [30, 30]
 
     # initialize simulation box
@@ -420,6 +447,11 @@ def main():
     # evaluate prev positions
     sim.eval_prev_pos()
 
+    # check if the velocity vectors are incorrectly updated at t=0
+    for atom in sim.atoms_list:
+        print(f"{atom.vel = }")
+
+    # check for energy conservation
     inital_total_energy = sim.get_system_KE() + sim.get_system_PE()
     print(f"initial total energy = {inital_total_energy}")
 
