@@ -37,7 +37,10 @@ PyVerletMD
     A simple 2-dimensional molecular dynamics simulator using Verlet algorithm
 
 
+<ADD VISILIZATION SAMPLE HERE>
+
 Based on former McGill University MIME 473 midterm project.
+
 So there was this project where we were asked to write a MATLAB script to perform a simple 2D molecular dynamics simulation implementing Verlet algorithm. 
 Well I think one could just hard-code the script, but I made it kinda modular (I guess?) with many functions blahblah. 
 I also add some sketchy live-plotting feature for better visualization (rather than writing a dump file and visulize in OVITO).
