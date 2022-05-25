@@ -1,7 +1,5 @@
 import numpy as np
 
-# TODO: verify if velocity should be updated BEFORE or AFTER updating position
-
 
 class Atom:
     """
