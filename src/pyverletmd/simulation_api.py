@@ -2,7 +2,22 @@ import numpy as np
 
 
 class Atom:
+    """
+    Class for particles in the simulation.
+    """
     def __init__(self, pos: list[float], vel: list[float], mass: float):
+        """
+        Init method.
+
+        Parameters:
+            pos (list): shape=(2,)
+                Initial position vector of this atom. (pos_x, pos_y)
+            vel (list): shape=(2,)
+                Initial velocity vector of this atom. (vel_x, vel_y)
+            mass (float):
+                Mass of atom in unit [eV*A^2*ps^-2]
+                1[kg] = 6.242e22[eV*A^2*ps^-2]
+        """
         # position vector
         self.pos: np.ndarray = np.array(pos)
 
@@ -35,37 +50,78 @@ class Atom:
         }
 
     def get_KE(self):
+        """
+        Return kinetic energy of this atom in unit [eV].
+        KE = (1/2) mv^2
+        """
+        if not self._updated["vel"]:
+            raise RuntimeError("velocity has not been updated")
         return 0.5 * self.mass * (np.linalg.norm(self.vel) ** 2)
 
     def reset_force(self):
+        """Reset force vector on this atom to 0."""
         self.force = np.zeros(2)
         self._updated_counter["force"] = 0
 
-    def add_force(self, force_by_atom_j):
+    def add_force(self, force_by_atom_j:np.ndarray):
+        """
+        Add force vector exerted by atom_j on this atom.
+        
+        Parameters:
+            force_by_atom_j (ndarray): shape=(2,)
+                Force vector exerted by atom_j on this atom.
+        """
         self.force += force_by_atom_j
         self._updated_counter["force"] += 1
 
     def reset_PE(self):
+        """Reset potential energy of this atom to 0."""
         self.PE = 0
         self._updated_counter["PE"] = 0
 
-    def add_PE(self, PE_with_atom_j):
+    def add_PE(self, PE_with_atom_j:float):
+        """
+        Add potential energy raised from interaction between atom_j and this atom.
+        
+        Parameters:
+            PE_with_atom_j (float): Potential energy raised from interaction between atom_j and this atom.
+        """
         self.PE += PE_with_atom_j
         self._updated_counter["PE"] += 1
 
     def update_acc(self):
+        """
+        Update acceleration vector of this atom at current timestep.
+        Must be executed after updating force.
+        a = F/m
+        """
         if not self._updated["force"]:
             raise RuntimeError("force has not been updated")
         self.acc = self.force / self.mass
         self._updated["acc"] = True
 
-    def update_pos(self, dt, size):
+    def update_pos(self, dt:float, size:np.ndarray):
+        """
+        Update position vector of this atom to the next timestep.
+        Should only be executed after updating force, acceleration, and velocity.
+        Verlet algorithm:
+            r(t+dt) = 2r(t) - r(t-dt) + a * dt^2
+
+        Parameters:
+            dt (float): Size of timestep in unit [ps].
+            size (np.ndarray): shape=(2,)
+                Size of the simulation box.
+        """
+        # check if force, acceleration, and velocity have been updated
         for prop in ("force", "acc", "vel"):
             if not self._updated[prop]:
                 raise RuntimeError(f"{prop} has not been updated")
         pos_temp = np.array(self.pos)  # later this will be the prev position
+
+        # use Verlet algorithm
         self.pos = 2 * self.pos - self.pos_prev + (dt**2 * self.acc)
-        self.pos = self.pos % size  # Periodic Boundary Condition
+
+        self.pos = self.pos % size  # correction for periodic boundary condition
         self.pos_prev = np.array(pos_temp)
         # append new position to trajectory
         self.traj = np.append(self.traj, [self.pos], axis=0)
@@ -76,6 +132,13 @@ class Atom:
         self._updated["vel"] = False
 
     def update_vel(self, dt):
+        """
+        Update velocity vector of this atom at current timestep.
+        Should only be executed after updating acceleration.
+
+        Parameters:
+            dt (float): Size of timestep in unit [ps].
+        """
         if not self._updated["acc"]:
             raise RuntimeError("acc has not been updated")
         self.vel += self.acc * dt
