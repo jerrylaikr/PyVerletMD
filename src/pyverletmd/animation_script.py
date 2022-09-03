@@ -1,12 +1,21 @@
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib import animation
-from pyverletmd.simulation_api import Many_body_system, Potential
+from pyverletmd.simulation_api import Many_body_system, Dummy_LJ_potential
+
+__author__ = "jerrylaikr"
+__copyright__ = "jerrylaikr"
+__license__ = "MIT"
 
 
 def main():
+    """
+    Script to visualize the MD simulation while calculating.
+    CLI is work in progress.
+    Live plotting is not working on system without GUI. Please save animation instead.
+    """
     # ===Params===
-    R_1 = 7
+    R_1 = 7.0
     R_C = 7.5
     MASS = (
         64 / 1000 / (6.02214076e23) * 6.242e22
@@ -16,7 +25,9 @@ def main():
     size = [30, 30]
 
     # initialize simulation box
-    sim = Many_body_system(size=size, potential_profile=Potential(R_1, R_C), dt=dt)
+    sim = Many_body_system(
+        size=size, potential_profile=Dummy_LJ_potential(R_1, R_C), dt=dt
+    )
     sim.add_atom([2, 4], [-1.98, -1.24], MASS)
     sim.add_atom([15, 10], [-2.38, -2.02], MASS)
     sim.add_atom([9, 6], [3.08, 2.52], MASS)
@@ -35,11 +46,11 @@ def main():
     debug_text = ax.text(0.02, 0.75, "", transform=ax.transAxes, fontsize=8)
 
     n_atoms = sim.n_atoms
-    traj = []
-    mark = []
-    vel_vector = []
-    force_vector = []
-    annot = []
+    traj = []  # for plotting atom trajectories
+    mark = []  # for plotting atom positions
+    vel_vector = []  # for plotting velocity vectors
+    force_vector = []  # for plotting force vectors
+    annot = []  # for marking atom indices
     for _ in range(n_atoms):
         traj.extend(ax.plot([], [], "c.", markersize=4))
         mark.extend(ax.plot([], [], "co", markersize=8))
