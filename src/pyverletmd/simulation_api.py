@@ -432,8 +432,8 @@ def main():
     MASS = (
         64 / 1000 / (6.02214076e23) * 6.242e22
     )  # 1[kg]/atom = 6.242e22[eV*A^2*ps^-2]/atom
-    dt = 0.2
-    n_steps = 30
+    dt = 0.02
+    n_steps = 300
     size = [30, 30]
 
     # initialize simulation box
